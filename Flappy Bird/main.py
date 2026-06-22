@@ -22,41 +22,65 @@ clock = pygame.time.Clock()
 BIRD_STARTING_X = 480
 BIRD_STARTING_Y = HEIGHT // 2
 GAP_BETWEEN_PIPES = 300
+GAME_FONT = pygame.font.SysFont("Candara", 30)
 
-pipes_speed = 5
-bird = Bird(BIRD_STARTING_X, BIRD_STARTING_Y)
-pipes:list[Pipepair] = []
-score = 0
-score_text = pygame.Surface((0,0))
-
-def set_score(new_score:int):
-    global score, score_text
-    score = new_score
-    score_text = GAME_FONT.render(f"score:{score}", True, "black")
+class GameState:
     
-set_score(0)
-
-def manage_pipes():
-    """generate, moving and deleting pipes"""
-    
-    for pipe in pipes:
-        pipe.move(pipes_speed)
-    
-    can_generate_new_pipe = len(pipes) == 0 or WIDTH - pipes[-1].x_pos >= GAP_BETWEEN_PIPES + PIPE_WIDTH
-    if can_generate_new_pipe: 
-        new_pipe = create_pipe()
-        pipes.append(new_pipe)
+    def __init__(self) -> None:
+        self.pipe_speed = 4
+        self.bird = Bird(BIRD_STARTING_X, BIRD_STARTING_Y)
+        self.pipes:list[Pipepair] = []
+        self.score = 0
+        self.score_text = pygame.Surface ((0, 0))
         
-    pipes_x = pipes[0].x_pos
-    if pipes_x < -PIPE_WIDTH:
-        pipes.pop(0)
+        self.set_score(0)
+        
+    def set_score(self, new_score:int):
+        self.score = new_score
+        self.score_text = GAME_FONT.render(f"Score: {self.score}", True, "black")
     
-def reset_game():
-    global bird, pipes, score, score_text
-    pipes = []
-    bird = Bird(BIRD_STARTING_X, BIRD_STARTING_Y)
-    set_score(0)
-      
+    def is_dead(self):
+        return self.bird.dead
+    
+    def update_bird(self):
+        self.bird.update(self.pipes)
+       
+        if self.bird.has_passed_pipe(game.pipes):
+            self.set_score(game.score + 1)
+            
+        self.update_pipe_speed()
+    
+    def reset(self):
+        self.bird = Bird(BIRD_STARTING_X, BIRD_STARTING_Y)
+        self.pipes.clear()
+        self.set_score(0)
+        
+        
+    def update_pipe_speed(self):
+        """Pipe speed + 0.5 every 20 score
+        """
+        
+        self.pipe_speed = 4 + 0.20 + (self.score // 20)
+        
+    def manage_pipes(self):
+    
+        """generate, moving and deleting pipes"""
+    
+        for pipe in self.pipes:
+            pipe.move(self.pipe_speed)
+    
+        can_generate_new_pipe = len(self.pipes) == 0 or WIDTH - self.pipes[-1].x_pos >= GAP_BETWEEN_PIPES + PIPE_WIDTH
+        if can_generate_new_pipe: 
+            new_pipe = create_pipe()
+            self.pipes.append(new_pipe)
+        
+        pipes_x = self.pipes[0].x_pos
+        if pipes_x < -PIPE_WIDTH:
+            self.pipes.pop(0)
+        
+
+game = GameState()
+game_over_screen = GameOverScreen()
 
 done = False
 
@@ -69,37 +93,35 @@ while not done:
             done = True
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_SPACE:
-                bird.jump()
+                game.bird.jump()
             if event.key == pygame.K_ESCAPE:
-                reset_game()
+                game.reset()
     
     # update logic and physics
-    if not bird.dead:
-        bird.update(pipes)
-        manage_pipes()
+    if not game.is_dead():
+        game.update_bird()
+        game.manage_pipes()
         
-        if bird.has_passed_pipe(pipes):
-            score += 1
-            set_score(score + 1)
+
     
     # draw stuff!
     screen.fill("white")  # todo: hex codes
 
-    if bird.dead:
-        screen.fill(0xff7777)
+    if game.is_dead():
+        screen.fill("red")
     
-    for pipe in pipes:
+    for pipe in game.pipes:
         pipe.draw(screen)
     
-    bird.draw(screen)
+    game.bird.draw(screen)
     
-    score_text_hitbox = score_text.get_rect(center=(WIDTH //2, 48))
-    screen.blit(score_text, score_text_hitbox)
+    score_text_hitbox = game.score_text.get_rect(center=(WIDTH //2, 48))
+    screen.blit(game.score_text, score_text_hitbox)
     
     pygame.display.flip()
     clock.tick(FRAMERATE)    
             
-            
+    
             
             
             

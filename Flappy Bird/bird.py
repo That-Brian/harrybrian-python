@@ -34,6 +34,9 @@ class Bird:
         if hitbox.top <= 0 and self.velocity_y < 0:
             self.dead = True
             
+        if self.has_hit_pipe(pipes):
+            self.dead = True
+            
             
     def jump(self):
         self.velocity_y = JUMP_STRENGTH

@@ -6,7 +6,7 @@ import random
 class Pipepair:
     
     """
-    Pair of pipes that bird should pass trhough for the game
+    Pair of pipes that bird should pass through for the game
     gap_y is the top, gap height is the gap size (vertical), rest is all pipe
     
     """
